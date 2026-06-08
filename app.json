@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.guysh101.sixbysix",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +21,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "11a7fed7-1fa5-4e32-8043-db9a4895d3c3"
+      }
+    },
+    "owner": "guysh101",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
