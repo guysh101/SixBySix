@@ -23,13 +23,13 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>6×6</Text>
+        <Text style={styles.title}>DRIFT</Text>
         <Text style={styles.subtitle}>Sliding Tic-Tac-Toe</Text>
 
         <View style={styles.rule}>
-          <Text style={styles.ruleText}>Get 5 in a row to win</Text>
-          <Text style={styles.ruleText}>After 6 pieces — oldest is removed</Text>
-          <Text style={styles.ruleText}>Gold ring marks the next piece to remove</Text>
+          <Text style={styles.ruleText}>Get 4 in a row to win</Text>
+          <Text style={styles.ruleText}>After 5 pieces — oldest is removed</Text>
+          <Text style={styles.ruleText}>Amber ring marks the next to go</Text>
         </View>
 
         {/* Player profile cards */}
@@ -50,14 +50,14 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
 
         <TouchableOpacity style={styles.buttonOuter} onPress={() => startGame('pass-and-play')} activeOpacity={0.8}>
-          <LinearGradient colors={['#FF5757', '#CC3030']} style={styles.button} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <LinearGradient colors={['#C0392B', '#8B1A1A']} style={styles.button} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
             <Text style={styles.buttonText}>🎮 Play with a Friend</Text>
             <Text style={styles.buttonSub}>Same device</Text>
           </LinearGradient>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.buttonOuter} onPress={() => startGame('vs-ai')} activeOpacity={0.8}>
-          <LinearGradient colors={['#00E5CC', '#009988']} style={styles.button} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <LinearGradient colors={['#2C4A6B', '#1A3050']} style={styles.button} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
             <Text style={styles.buttonText}>🤖 vs AI</Text>
             <Text style={styles.buttonSub}>Challenge the computer</Text>
           </LinearGradient>
@@ -68,26 +68,21 @@ export default function HomeScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080E14' },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
+  container: { flex: 1, backgroundColor: '#F7F3EE' },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
   title: {
     fontFamily: 'Orbitron_900Black',
-    fontSize: 72,
-    color: '#FFFFFF',
-    letterSpacing: -1,
-    textShadowColor: '#00E5CC',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
+    fontSize: 64,
+    color: '#2C1810',
+    letterSpacing: 8,
+    textShadowColor: 'rgba(0,0,0,0.15)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 4,
   },
   subtitle: {
     fontFamily: 'Orbitron_400Regular',
-    fontSize: 13,
-    color: '#5A7A8A',
+    fontSize: 11,
+    color: '#7A5C46',
     marginBottom: 24,
     letterSpacing: 4,
     textTransform: 'uppercase',
@@ -99,9 +94,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     borderWidth: 1,
-    borderColor: '#1C2E42',
+    borderColor: '#E8DDD0',
+    backgroundColor: '#FFFFFF',
   },
-  ruleText: { color: '#AABBCC', fontSize: 13, marginBottom: 3, textAlign: 'center' },
+  ruleText: { color: '#7A5C46', fontSize: 13, marginBottom: 3, textAlign: 'center' },
 
   profileRow: {
     flexDirection: 'row',
@@ -113,20 +109,20 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     flex: 1,
-    backgroundColor: '#0C1620',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1C2E42',
+    borderColor: '#E8DDD0',
     padding: 12,
     alignItems: 'center',
     gap: 6,
   },
-  profileName: { color: '#FFFFFF', fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  profileEdit: { color: '#5A7A8A', fontSize: 10 },
+  profileName: { color: '#2C1810', fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  profileEdit: { color: '#B09A87', fontSize: 10 },
   vsText: {
     fontFamily: 'Orbitron_900Black',
     fontSize: 13,
-    color: '#5A7A8A',
+    color: '#B09A87',
     letterSpacing: 2,
     paddingHorizontal: 4,
   },
@@ -134,5 +130,5 @@ const styles = StyleSheet.create({
   buttonOuter: { borderRadius: 12, width: '100%', marginBottom: 14, overflow: 'hidden' },
   button: { paddingVertical: 18, paddingHorizontal: 32, alignItems: 'center' },
   buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-  buttonSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 },
+  buttonSub: { color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 },
 });

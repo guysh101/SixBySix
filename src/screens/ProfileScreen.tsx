@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
 import AvatarBadge from '../components/AvatarBadge';
+import AvatarFace from '../components/AvatarFace';
 import { useProfileStore } from '../store/profileStore';
 import { SKINS_CATALOG, RARITY_COLORS, getSkin, Skin } from '../types/profile';
 
@@ -16,10 +17,13 @@ type Props = {
   route: RouteProp<RootStackParamList, 'Profile'>;
 };
 
+const EYE_LABELS = ['• •', '◉ ◉', '— —', '• —'];
+const MOUTH_LABELS = ['smile', 'smirk', 'open', 'frown'];
+
 export default function ProfileScreen({ navigation, route }: Props) {
   const { playerSlot } = route.params;
   const profile = useProfileStore(s => s[playerSlot]);
-  const { updateName, equipSkin, buySkin } = useProfileStore();
+  const { updateName, equipSkin, buySkin, updateAvatar } = useProfileStore();
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
@@ -69,10 +73,7 @@ export default function ProfileScreen({ navigation, route }: Props) {
           end={{ x: 1, y: 1 }}
         />
         <Text style={styles.skinName}>{skin.name}</Text>
-        <View style={[
-          styles.rarityChip,
-          { borderColor: RARITY_COLORS[skin.rarity] },
-        ]}>
+        <View style={[styles.rarityChip, { borderColor: RARITY_COLORS[skin.rarity] }]}>
           <Text style={[styles.rarityText, { color: RARITY_COLORS[skin.rarity] }]}>
             {skin.rarity.toUpperCase()}
           </Text>
@@ -96,7 +97,6 @@ export default function ProfileScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Back</Text>
@@ -133,7 +133,6 @@ export default function ProfileScreen({ navigation, route }: Props) {
           <Text style={styles.skinLabel}>{activeSkin.name} skin</Text>
         </View>
 
-        {/* Notice */}
         {notice && (
           <View style={styles.notice}>
             <Text style={styles.noticeText}>{notice}</Text>
@@ -154,8 +153,73 @@ export default function ProfileScreen({ navigation, route }: Props) {
           ))}
         </View>
 
+        {/* Face Editor */}
+        <Text style={styles.sectionTitle}>AVATAR</Text>
+
+        <View style={styles.faceEditorRow}>
+          {/* Live preview */}
+          <View style={styles.facePreviewWrap}>
+            <LinearGradient
+              colors={activeSkin.colors}
+              style={styles.facePreviewCircle}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+            <AvatarFace config={profile.avatar} size={72} />
+          </View>
+
+          {/* Pickers */}
+          <View style={styles.pickerCol}>
+            <Text style={styles.pickerLabel}>EYES</Text>
+            <View style={styles.pickerRow}>
+              {EYE_LABELS.map((label, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.pickerBtn, profile.avatar.eyeStyle === i && styles.pickerBtnSelected]}
+                  onPress={() => updateAvatar(playerSlot, { eyeStyle: i })}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.pickerFaceWrap}>
+                    <LinearGradient
+                      colors={activeSkin.colors}
+                      style={styles.pickerFaceCircle}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    />
+                    <AvatarFace config={{ eyeStyle: i, mouthStyle: profile.avatar.mouthStyle }} size={36} />
+                  </View>
+                  <Text style={styles.pickerBtnText}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.pickerLabel, { marginTop: 12 }]}>MOUTH</Text>
+            <View style={styles.pickerRow}>
+              {MOUTH_LABELS.map((label, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.pickerBtn, profile.avatar.mouthStyle === i && styles.pickerBtnSelected]}
+                  onPress={() => updateAvatar(playerSlot, { mouthStyle: i })}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.pickerFaceWrap}>
+                    <LinearGradient
+                      colors={activeSkin.colors}
+                      style={styles.pickerFaceCircle}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    />
+                    <AvatarFace config={{ eyeStyle: profile.avatar.eyeStyle, mouthStyle: i }} size={36} />
+                  </View>
+                  <Text style={styles.pickerBtnText}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
         {/* Skins */}
-        <Text style={styles.sectionTitle}>SKINS</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>SKINS</Text>
         <FlatList
           data={SKINS_CATALOG}
           renderItem={renderSkinCard}
@@ -164,18 +228,13 @@ export default function ProfileScreen({ navigation, route }: Props) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.skinsList}
         />
-
-        {/* Edit Avatar (coming soon) */}
-        <TouchableOpacity style={styles.comingSoonBtn} disabled>
-          <Text style={styles.comingSoonText}>🎨  Edit Avatar  —  Coming Soon</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080E14' },
+  container: { flex: 1, backgroundColor: '#F7F3EE' },
 
   header: {
     flexDirection: 'row',
@@ -185,10 +244,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C2E42',
+    borderBottomColor: '#3D1A6B',
   },
   backBtn: { padding: 4 },
-  backText: { color: '#5A7A8A', fontSize: 15 },
+  backText: { color: '#C084FC', fontSize: 15 },
   headerTitle: {
     fontFamily: 'Orbitron_900Black',
     fontSize: 14,
@@ -196,7 +255,7 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   coinsChip: {
-    backgroundColor: '#1C2E42',
+    backgroundColor: '#1A0040',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -215,13 +274,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     borderBottomWidth: 2,
-    borderBottomColor: '#00E5CC',
+    borderBottomColor: '#E879F9',
     paddingHorizontal: 4,
     paddingBottom: 2,
     minWidth: 120,
     textAlign: 'center',
   },
-  skinLabel: { marginTop: 6, color: '#5A7A8A', fontSize: 12, letterSpacing: 1 },
+  skinLabel: { marginTop: 6, color: '#7C3AED', fontSize: 12, letterSpacing: 1 },
 
   notice: {
     marginHorizontal: 24,
@@ -243,10 +302,10 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#0C1620',
+    backgroundColor: '#1A0040',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1C2E42',
+    borderColor: '#3D1A6B',
     paddingVertical: 14,
     alignItems: 'center',
   },
@@ -258,29 +317,72 @@ const styles = StyleSheet.create({
   statLabel: {
     marginTop: 4,
     fontSize: 10,
-    color: '#5A7A8A',
+    color: '#7C3AED',
     letterSpacing: 1,
   },
 
   sectionTitle: {
     fontFamily: 'Orbitron_900Black',
     fontSize: 11,
-    color: '#5A7A8A',
+    color: '#7C3AED',
     letterSpacing: 3,
     marginHorizontal: 24,
     marginBottom: 12,
   },
-  skinsList: { paddingHorizontal: 24, gap: 10 },
+
+  // Face editor
+  faceEditorRow: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginBottom: 8,
+    gap: 16,
+    alignItems: 'flex-start',
+  },
+  facePreviewWrap: {
+    width: 72,
+    height: 72,
+  },
+  facePreviewCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    position: 'absolute',
+  },
+  pickerCol: { flex: 1 },
+  pickerLabel: {
+    fontFamily: 'Orbitron_900Black',
+    fontSize: 9,
+    color: '#7C3AED',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  pickerRow: { flexDirection: 'row', gap: 6 },
+  pickerBtn: {
+    flex: 1,
+    backgroundColor: '#1A0040',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#3D1A6B',
+    paddingVertical: 6,
+    alignItems: 'center',
+    gap: 4,
+  },
+  pickerBtnSelected: { borderColor: '#E879F9', borderWidth: 2, backgroundColor: '#2D0A6B' },
+  pickerFaceWrap: { width: 36, height: 36 },
+  pickerFaceCircle: { width: 36, height: 36, borderRadius: 18, position: 'absolute' },
+  pickerBtnText: { fontSize: 8, color: '#7C3AED', fontWeight: '600' },
+
+  skinsList: { paddingHorizontal: 24, gap: 10, marginBottom: 8 },
   skinCard: {
     width: 90,
-    backgroundColor: '#0C1620',
+    backgroundColor: '#1A0040',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1C2E42',
+    borderColor: '#3D1A6B',
     padding: 10,
     alignItems: 'center',
   },
-  skinCardEquipped: { borderColor: '#00E5CC', borderWidth: 2 },
+  skinCardEquipped: { borderColor: '#E879F9', borderWidth: 2 },
   skinPreview: {
     width: 44,
     height: 44,
@@ -297,13 +399,13 @@ const styles = StyleSheet.create({
   },
   rarityText: { fontSize: 8, fontWeight: '700', letterSpacing: 0.5 },
   equippedBadge: {
-    backgroundColor: '#00E5CC22',
+    backgroundColor: '#E879F922',
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  equippedText: { fontSize: 9, color: '#00E5CC', fontWeight: '700' },
-  ownedText: { fontSize: 9, color: '#5A7A8A' },
+  equippedText: { fontSize: 9, color: '#E879F9', fontWeight: '700' },
+  ownedText: { fontSize: 9, color: '#7C3AED' },
   priceChip: {
     backgroundColor: '#FFD70022',
     borderRadius: 4,
@@ -313,16 +415,4 @@ const styles = StyleSheet.create({
   priceChipLocked: { backgroundColor: '#33333333' },
   priceText: { fontSize: 9, color: '#FFD700', fontWeight: '700' },
   priceTextLocked: { color: '#556677' },
-
-  comingSoonBtn: {
-    marginHorizontal: 24,
-    marginTop: 32,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1C2E42',
-    alignItems: 'center',
-    opacity: 0.5,
-  },
-  comingSoonText: { color: '#5A7A8A', fontSize: 14 },
 });

@@ -53,7 +53,7 @@ cd android && ANDROID_HOME=~/Library/Android/sdk JAVA_HOME="/Applications/Androi
 ## פרמטרי המשחק
 | קבוע | ערך | משמעות |
 |------|-----|---------|
-| `BOARD_SIZE` | 6 | 6x6 לוח |
-| `MAX_PIECES_PER_PLAYER` | 6 | כלים מקסימום |
-| `WIN_LENGTH` | 5 | 5 ברצף לניצחון |
-| `MAX_TURNS_BEFORE_DRAW` | 100 | תורות לתיקו |
+| `BOARD_SIZE` | 5 | 5x5 לוח |
+| `MAX_PIECES_PER_PLAYER` | 5 | כלים מקסימום |
+| `WIN_LENGTH` | 4 | 4 ברצף לניצחון |
+| `MAX_TURNS_BEFORE_DRAW` | 60 | תורות לתיקו |

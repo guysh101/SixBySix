@@ -45,7 +45,6 @@ export default function GameScreen({ navigation }: Props) {
   const p2Count = moveHistory.filter(m => m.player === 'p2').length;
   const anyExpiring = p1Count >= MAX_PIECES_PER_PLAYER || p2Count >= MAX_PIECES_PER_PLAYER;
 
-  // Record game result once when game ends; reset flag on new game
   useEffect(() => {
     if (gameOver) {
       if (!resultRecordedRef.current) {
@@ -57,19 +56,17 @@ export default function GameScreen({ navigation }: Props) {
     }
   }, [gameOver]);
 
-  // Pulse animation
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.08, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
       ])
     );
     anim.start();
     return () => anim.stop();
   }, [currentTurn, pulseAnim]);
 
-  // AI move
   useEffect(() => {
     if (!isAITurn) return;
     const timer = setTimeout(() => {
@@ -97,7 +94,7 @@ export default function GameScreen({ navigation }: Props) {
           key={i}
           style={[
             styles.dot,
-            { backgroundColor: i < count ? PLAYER_COLORS[player] : '#1E2A3A' },
+            { backgroundColor: i < count ? PLAYER_COLORS[player] : '#E8DDD0' },
             isExpiryDot && styles.dotExpiring,
           ]}
         />
@@ -108,7 +105,6 @@ export default function GameScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>← Home</Text>
@@ -118,13 +114,12 @@ export default function GameScreen({ navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Status */}
       {gameOver ? (
         <View style={[
           styles.statusBox,
-          { backgroundColor: winner ? PLAYER_COLORS[winner] + '33' : '#33333344' },
+          { backgroundColor: winner ? PLAYER_COLORS[winner] + '22' : '#00000011' },
         ]}>
-          <Text style={[styles.statusText, { color: winner ? PLAYER_COLORS[winner] : '#AABBCC' }]}>
+          <Text style={[styles.statusText, { color: winner ? PLAYER_COLORS[winner] : '#7A5C46' }]}>
             {getWinnerMessage(isDraw, gameMode, winner, p1Name)}
           </Text>
           <TouchableOpacity onPress={resetGame} style={styles.playAgainBtn}>
@@ -135,7 +130,7 @@ export default function GameScreen({ navigation }: Props) {
         <Animated.View
           style={[
             styles.statusBox,
-            { backgroundColor: PLAYER_COLORS[currentTurn] + '22', transform: [{ scale: pulseAnim }] },
+            { backgroundColor: PLAYER_COLORS[currentTurn] + '18', transform: [{ scale: pulseAnim }] },
           ]}
         >
           <Text style={[styles.statusText, { color: PLAYER_COLORS[currentTurn] }]}>
@@ -144,7 +139,6 @@ export default function GameScreen({ navigation }: Props) {
         </Animated.View>
       )}
 
-      {/* Piece counters */}
       <View style={styles.countersRow}>
         <View style={styles.playerInfo}>
           <Text style={[styles.playerLabel, { color: PLAYER_COLORS.p1 }]}>{p1Name}</Text>
@@ -156,7 +150,6 @@ export default function GameScreen({ navigation }: Props) {
         </View>
       </View>
 
-      {/* Board */}
       <View style={styles.boardContainer}>
         <GameBoard
           gameState={gameState}
@@ -176,20 +169,20 @@ export default function GameScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0D1821' },
+  container: { flex: 1, backgroundColor: '#F7F3EE' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C2E42',
+    borderBottomColor: '#E8DDD0',
     paddingBottom: 8,
   },
   backBtn: { padding: 8 },
-  backText: { color: '#8899AA', fontSize: 16 },
+  backText: { color: '#7A5C46', fontSize: 16 },
   resetBtn: { padding: 8 },
-  resetText: { color: '#8899AA', fontSize: 16 },
+  resetText: { color: '#7A5C46', fontSize: 16 },
   statusBox: {
     marginHorizontal: 16,
     marginTop: 12,
@@ -198,11 +191,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E8DDD0',
   },
   statusText: { fontSize: 18, fontWeight: '700' },
   playAgainBtn: {
     marginTop: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#2C1810',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
@@ -217,14 +212,9 @@ const styles = StyleSheet.create({
   playerInfo: { alignItems: 'center' },
   playerLabel: { fontSize: 13, fontWeight: '600', marginBottom: 6 },
   dotRow: { flexDirection: 'row', gap: 4 },
-  dot: { width: 12, height: 12, borderRadius: 6 },
-  dotExpiring: { borderWidth: 2, borderColor: '#FFAA00' },
-  boardContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
+  dot: { width: 14, height: 14, borderRadius: 7 },
+  dotExpiring: { borderWidth: 2, borderColor: '#D4853A' },
+  boardContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 16 },
   hint: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -232,6 +222,6 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 6,
   },
-  hintDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: '#FFAA00' },
-  hintText: { color: '#556677', fontSize: 12 },
+  hintDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: '#D4853A' },
+  hintText: { color: '#B09A87', fontSize: 12 },
 });

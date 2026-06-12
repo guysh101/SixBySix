@@ -18,16 +18,16 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const [fontsLoaded] = useFonts({ Orbitron_900Black, Orbitron_400Regular });
 
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#080E14' }} />;
+  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: '#F7F3EE' }} />;
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <NavigationContainer>
         <Stack.Navigator
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: '#080E14' },
+            contentStyle: { backgroundColor: '#F7F3EE' },
             animation: 'slide_from_right',
           }}
         >

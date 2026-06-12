@@ -17,10 +17,10 @@ export interface GameState {
   winningLine: number[] | null;
 }
 
-export const BOARD_SIZE = 6;
-export const MAX_PIECES_PER_PLAYER = 6;
-export const WIN_LENGTH = 5;
-const MAX_TURNS_BEFORE_DRAW = 100;
+export const BOARD_SIZE = 5;
+export const MAX_PIECES_PER_PLAYER = 5;
+export const WIN_LENGTH = 4;
+const MAX_TURNS_BEFORE_DRAW = 60;
 
 export function createInitialState(): GameState {
   return {

@@ -20,10 +20,11 @@ export default function GameBoard({ gameState, onCellPress, disabled }: Props) {
   const { board, moveHistory, winner, isDraw, currentTurn, winningLine } = gameState;
 
   const { p1, p2 } = useProfileStore();
-  const pieceColors: Record<Player, string> = {
-    p1: getSkin(p1.activeSkinId).colors[0],
-    p2: getSkin(p2.activeSkinId).colors[0],
+  const skinColors: Record<Player, [string, string]> = {
+    p1: getSkin(p1.activeSkinId).colors,
+    p2: getSkin(p2.activeSkinId).colors,
   };
+  const avatars: Record<Player, import('../types/profile').AvatarConfig> = { p1: p1.avatar, p2: p2.avatar };
 
   const prevBoardRef = useRef<CellType[]>(board);
   const [ghost, setGhost] = useState<Ghost | null>(null);
@@ -79,7 +80,8 @@ export default function GameBoard({ gameState, onCellPress, disabled }: Props) {
                 isWinning={winIdx >= 0}
                 winningOrder={winIdx >= 0 ? winIdx : 0}
                 ghostPlayer={ghost?.index === index ? ghost.player : null}
-                pieceColor={value ? pieceColors[value] : undefined}
+                pieceColors={value ? skinColors[value] : undefined}
+                pieceAvatar={value ? avatars[value] : undefined}
               />
             );
           })}
@@ -92,15 +94,15 @@ export default function GameBoard({ gameState, onCellPress, disabled }: Props) {
 const styles = StyleSheet.create({
   board: {
     padding: 10,
-    backgroundColor: '#111D2B',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1C2E42',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: '#3D2B1F',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#6B4A32',
+    shadowColor: '#2C1810',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 12,
   },
   row: {
     flexDirection: 'row',

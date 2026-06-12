@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PlayerProfile, getSkin } from '../types/profile';
+import AvatarFace from './AvatarFace';
 
 interface Props {
   profile: PlayerProfile;
@@ -10,41 +11,17 @@ interface Props {
 
 export default function AvatarBadge({ profile, size = 60 }: Props) {
   const skin = getSkin(profile.activeSkinId);
-  const fontSize = size * 0.42;
   const borderRadius = size / 2;
 
   return (
-    <LinearGradient
-      colors={skin.colors}
-      style={[styles.badge, { width: size, height: size, borderRadius }]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <View style={[styles.inner, { borderRadius }]}>
-        <Text style={[styles.initial, { fontSize }]}>
-          {profile.name.trim()[0]?.toUpperCase() ?? '?'}
-        </Text>
-      </View>
-    </LinearGradient>
+    <View style={{ width: size, height: size }}>
+      <LinearGradient
+        colors={skin.colors}
+        style={{ width: size, height: size, borderRadius, justifyContent: 'center', alignItems: 'center' }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      <AvatarFace config={profile.avatar} size={size} />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  inner: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  initial: {
-    fontFamily: 'Orbitron_900Black',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-});

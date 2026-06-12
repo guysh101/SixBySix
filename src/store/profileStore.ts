@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PlayerProfile, createDefaultProfile, getSkin } from '../types/profile';
+import { PlayerProfile, AvatarConfig, createDefaultProfile, getSkin } from '../types/profile';
 
 interface ProfileState {
   p1: PlayerProfile;
@@ -9,6 +9,7 @@ interface ProfileState {
   updateName: (slot: 'p1' | 'p2', name: string) => void;
   equipSkin: (slot: 'p1' | 'p2', skinId: string) => void;
   buySkin: (slot: 'p1' | 'p2', skinId: string) => boolean;
+  updateAvatar: (slot: 'p1' | 'p2', patch: Partial<AvatarConfig>) => void;
   recordResult: (winner: 'p1' | 'p2' | null, mode: 'pass-and-play' | 'vs-ai') => void;
 }
 
@@ -49,6 +50,9 @@ export const useProfileStore = create<ProfileState>()(
         }));
         return true;
       },
+
+      updateAvatar: (slot, patch) =>
+        set(state => ({ [slot]: { ...state[slot], avatar: { ...state[slot].avatar, ...patch } } })),
 
       recordResult: (winner, mode) =>
         set(state => {
