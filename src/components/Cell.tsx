@@ -2,7 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import { TouchableOpacity, View, StyleSheet, Animated } from 'react-native';
 import { Player } from '../game/gameLogic';
 import { AvatarConfig } from '../types/profile';
-import AvatarFace from './AvatarFace';
+import { GemPalette, getSkinGemPalette } from '../theme/colors';
+import Gem from './Gem';
 
 interface Props {
   value: Player | null;
@@ -16,32 +17,51 @@ interface Props {
   ghostPlayer: Player | null;
   pieceColors?: [string, string];
   pieceAvatar?: AvatarConfig;
+  // Gem palette derived from skin ID — passed from GameBoard
+  gemPalette?: GemPalette;
 }
 
+// Kept for backward compatibility (GameScreen uses PLAYER_COLORS)
 export const PLAYER_COLORS: Record<Player, string> = {
-  p1: '#C0392B',
-  p2: '#2C4A6B',
+  p1: '#FF6253',
+  p2: '#4F9CF7',
 };
 
-function Cell({ value, onPress, disabled, isExpiring, pieceAge, maxAge, isWinning, winningOrder, ghostPlayer, pieceColors, pieceAvatar }: Props) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const winOverlayAnim = useRef(new Animated.Value(0)).current;
-  const ghostAnim = useRef(new Animated.Value(0)).current;
+const PLAYER_PALETTE: Record<Player, GemPalette> = {
+  p1: getSkinGemPalette('classic_red'),
+  p2: getSkinGemPalette('classic_teal'),
+};
 
-  const color = (value && pieceColors) ? pieceColors[0] : (value ? PLAYER_COLORS[value] : PLAYER_COLORS.p1);
+function Cell({
+  value,
+  onPress,
+  disabled,
+  isExpiring,
+  pieceAge,
+  maxAge,
+  isWinning,
+  winningOrder,
+  ghostPlayer,
+  pieceColors,
+  pieceAvatar,
+  gemPalette,
+}: Props) {
+  const scaleAnim      = useRef(new Animated.Value(1)).current;
+  const winOverlayAnim = useRef(new Animated.Value(0)).current;
+  const ghostAnim      = useRef(new Animated.Value(0)).current;
 
   // Placement pop
   useEffect(() => {
     if (value !== null) {
       scaleAnim.setValue(0.3);
       Animated.sequence([
-        Animated.timing(scaleAnim, { toValue: 1.35, duration: 120, useNativeDriver: true }),
-        Animated.timing(scaleAnim, { toValue: 1.0, duration: 80, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1.3, duration: 120, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1.0, duration: 80,  useNativeDriver: true }),
       ]).start();
     }
   }, [value]);
 
-  // Win highlight with stagger — 200ms delay lets placement finish first
+  // Win highlight (staggered)
   useEffect(() => {
     if (isWinning && value !== null) {
       winOverlayAnim.setValue(0);
@@ -49,7 +69,7 @@ function Cell({ value, onPress, disabled, isExpiring, pieceAge, maxAge, isWinnin
         Animated.parallel([
           Animated.timing(winOverlayAnim, { toValue: 0.35, duration: 200, useNativeDriver: true }),
           Animated.sequence([
-            Animated.timing(scaleAnim, { toValue: 1.25, duration: 150, useNativeDriver: true }),
+            Animated.timing(scaleAnim, { toValue: 1.2, duration: 150, useNativeDriver: true }),
             Animated.timing(scaleAnim, { toValue: 1.0, duration: 150, useNativeDriver: true }),
           ]),
         ]).start();
@@ -60,7 +80,7 @@ function Cell({ value, onPress, disabled, isExpiring, pieceAge, maxAge, isWinnin
     }
   }, [isWinning]);
 
-  // Ghost fade-out when sliding window removes this piece
+  // Ghost fade-out
   useEffect(() => {
     if (ghostPlayer !== null) {
       ghostAnim.setValue(1);
@@ -68,48 +88,72 @@ function Cell({ value, onPress, disabled, isExpiring, pieceAge, maxAge, isWinnin
     }
   }, [ghostPlayer]);
 
-  let pieceOpacity: number;
-  if (isExpiring) {
-    pieceOpacity = 0.35;
-  } else if (pieceAge !== null) {
-    pieceOpacity = 0.5 + (pieceAge / maxAge) * 0.5;
-  } else {
-    pieceOpacity = 1;
+  // Piece opacity based on age (expiring handled by Gem component internally)
+  let pieceOpacity = 1;
+  if (!isExpiring && pieceAge !== null) {
+    pieceOpacity = 0.52 + (pieceAge / maxAge) * 0.48;
   }
 
-  const ghostScale = ghostAnim.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.0] });
-  const ghostColor = ghostPlayer ? (pieceColors ? pieceColors[0] : PLAYER_COLORS[ghostPlayer]) : PLAYER_COLORS.p1;
+  const palette: GemPalette = gemPalette ?? (value ? PLAYER_PALETTE[value] : PLAYER_PALETTE.p1);
+
+  const ghostPalette: GemPalette = ghostPlayer
+    ? (PLAYER_PALETTE[ghostPlayer])
+    : PLAYER_PALETTE.p1;
+
+  const ghostScale = ghostAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.0] });
 
   return (
     <TouchableOpacity
-      style={[
-        styles.cell,
-        value !== null && styles.occupied,
-        isWinning && value && { borderColor: color, borderWidth: 2 },
-      ]}
+      style={styles.cell}
       onPress={onPress}
       disabled={disabled || value !== null}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
+      {/* Inset socket overlay (dark top arc) */}
+      <View style={styles.inset} pointerEvents="none" />
+
+      {/* Win glow overlay */}
       {isWinning && value && (
         <Animated.View
-          style={[StyleSheet.absoluteFill, { backgroundColor: color, opacity: winOverlayAnim, borderRadius: 6 }]}
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: PLAYER_COLORS[value],
+              opacity: winOverlayAnim,
+              borderRadius: 15,
+            },
+          ]}
+          pointerEvents="none"
         />
       )}
+
+      {/* Ghost piece (fade-out on removal) */}
       {ghostPlayer !== null && value === null && (
         <Animated.View
-          style={[styles.piece, { backgroundColor: ghostColor, opacity: ghostAnim, transform: [{ scale: ghostScale }] }]}
-        />
+          style={{
+            opacity: ghostAnim,
+            transform: [{ scale: ghostScale }],
+          }}
+          pointerEvents="none"
+        >
+          <Gem palette={ghostPalette} size={GEM_SIZE} />
+        </Animated.View>
       )}
+
+      {/* Live piece */}
       {value && (
         <Animated.View
-          style={[
-            styles.piece,
-            { backgroundColor: color, opacity: pieceOpacity, transform: [{ scale: scaleAnim }] },
-          ]}
+          style={{
+            opacity: pieceOpacity,
+            transform: [{ scale: scaleAnim }],
+          }}
         >
-          {pieceAvatar && <AvatarFace config={pieceAvatar} size={40} />}
-          {isExpiring && <View style={styles.expiryRing} />}
+          <Gem
+            palette={palette}
+            size={GEM_SIZE}
+            avatar={pieceAvatar}
+            expiring={isExpiring}
+          />
         </Animated.View>
       )}
     </TouchableOpacity>
@@ -118,38 +162,32 @@ function Cell({ value, onPress, disabled, isExpiring, pieceAge, maxAge, isWinnin
 
 export default React.memo(Cell);
 
+const CELL_SIZE = 58;
+const GEM_SIZE  = 46;
+
 const styles = StyleSheet.create({
   cell: {
-    width: 54,
-    height: 54,
-    margin: 2,
-    borderRadius: 8,
-    backgroundColor: '#2D1F14',
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    borderRadius: 15,
+    backgroundColor: '#2A1755',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4A3020',
-    overflow: 'hidden',
+    overflow: 'visible',
+    // subtle gradient via shadow layers instead of LinearGradient to keep it flat
+    shadowColor: '#382371',
+    shadowOffset: { width: 0, height: CELL_SIZE },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
-  occupied: { backgroundColor: '#251A0F' },
-  piece: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  expiryRing: {
+  inset: {
     position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#D4853A',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: CELL_SIZE * 0.45,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
 });

@@ -1,24 +1,142 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, SafeAreaView,
-  ScrollView, TextInput, FlatList,
+  ScrollView, TextInput, FlatList, Animated,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
-import AvatarBadge from '../components/AvatarBadge';
-import AvatarFace from '../components/AvatarFace';
 import { useProfileStore } from '../store/profileStore';
 import { SKINS_CATALOG, RARITY_COLORS, getSkin, Skin } from '../types/profile';
+import { getSkinGemPalette, GemPalette, RARITY_HEX, Fonts } from '../theme/colors';
+import SkyScene from '../components/SkyScene';
+import Gem from '../components/Gem';
+import Ribbon from '../components/Ribbon';
+import Capsule from '../components/Capsule';
+import Coin from '../components/Coin';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Profile'>;
   route: RouteProp<RootStackParamList, 'Profile'>;
 };
 
-const EYE_LABELS = ['• •', '◉ ◉', '— —', '• —'];
-const MOUTH_LABELS = ['smile', 'smirk', 'open', 'frown'];
+// ─── Section tag ─────────────────────────────────────────────────────────────
+
+function SectionTag({ label, style }: { label: string; style?: object }) {
+  return (
+    <View style={[tagStyles.wrap, style]}>
+      <View style={tagStyles.line} />
+      <View style={tagStyles.pill}>
+        <Text style={tagStyles.text}>{label}</Text>
+      </View>
+      <View style={tagStyles.line} />
+    </View>
+  );
+}
+
+const tagStyles = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 22, marginBottom: 14 },
+  line: { flex: 1, height: 1.5, backgroundColor: 'rgba(255,255,255,0.4)' },
+  pill: {
+    backgroundColor: 'rgba(118,71,190,0.7)',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  text: { fontFamily: Fonts.uiBold, fontSize: 11, letterSpacing: 2, color: '#FFFFFF' },
+});
+
+// ─── Skin card ────────────────────────────────────────────────────────────────
+
+interface SkinCardProps {
+  skin: Skin;
+  palette: GemPalette;
+  isEquipped: boolean;
+  isOwned: boolean;
+  canAfford: boolean;
+  onPress: () => void;
+}
+
+function SkinCard({ skin, palette, isEquipped, isOwned, canAfford, onPress }: SkinCardProps) {
+  const rarityColor = RARITY_HEX[skin.rarity] ?? RARITY_COLORS[skin.rarity];
+  return (
+    <TouchableOpacity
+      style={[skinStyles.card, isEquipped && { borderColor: '#FFC93C', borderWidth: 2.5 }]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      <Gem palette={palette} size={52} />
+      <Text style={skinStyles.name}>{skin.name}</Text>
+
+      <View style={[skinStyles.rarityChip, { borderColor: rarityColor }]}>
+        <Text style={[skinStyles.rarityText, { color: rarityColor }]}>
+          {skin.rarity.toUpperCase()}
+        </Text>
+      </View>
+
+      {isEquipped ? (
+        <View style={skinStyles.equippedBadge}><Text style={skinStyles.equippedText}>✓ ON</Text></View>
+      ) : isOwned ? (
+        <Text style={skinStyles.ownedText}>OWNED</Text>
+      ) : (
+        <View style={[skinStyles.priceRow, !canAfford && skinStyles.priceRowLocked]}>
+          <Coin size={14} />
+          <Text style={[skinStyles.priceText, !canAfford && skinStyles.priceTextLocked]}>
+            {skin.price}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+const skinStyles = StyleSheet.create({
+  card: {
+    width: 96,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.5)',
+    padding: 10,
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: 'rgba(58,28,99,0.2)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  name: { fontFamily: Fonts.uiBold, fontSize: 11, color: '#4A2C6E', textAlign: 'center' },
+  rarityChip: { borderWidth: 1, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 },
+  rarityText: { fontSize: 8, fontFamily: Fonts.uiBold, letterSpacing: 0.5 },
+  equippedBadge: {
+    backgroundColor: '#FFC93C33',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  equippedText: { fontSize: 9, fontFamily: Fonts.uiBold, color: '#E8960C' },
+  ownedText: { fontSize: 9, fontFamily: Fonts.ui, color: '#7647BE' },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(255,201,60,0.15)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  priceRowLocked: { backgroundColor: 'rgba(0,0,0,0.06)' },
+  priceText: { fontSize: 9, fontFamily: Fonts.uiBold, color: '#E8960C' },
+  priceTextLocked: { color: '#9AA0B2' },
+});
+
+// ─── ProfileScreen ────────────────────────────────────────────────────────────
+
+const EYE_COUNT   = 4;
+const MOUTH_COUNT = 4;
 
 export default function ProfileScreen({ navigation, route }: Props) {
   const { playerSlot } = route.params;
@@ -26,22 +144,39 @@ export default function ProfileScreen({ navigation, route }: Props) {
   const { updateName, equipSkin, buySkin, updateAvatar } = useProfileStore();
 
   const [editingName, setEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState(profile.name);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [nameInput,   setNameInput]   = useState(profile.name);
+  const [notice,      setNotice]      = useState<string | null>(null);
 
-  const activeSkin = getSkin(profile.activeSkinId);
+  const heroBob = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(heroBob, { toValue: 1, duration: 1700, useNativeDriver: true }),
+        Animated.timing(heroBob, { toValue: 0, duration: 1700, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const heroBobY = heroBob.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
+
+  const activeSkin    = getSkin(profile.activeSkinId);
+  const profilePalette = getSkinGemPalette(profile.activeSkinId);
   const winRate = profile.stats.gamesPlayed > 0
     ? Math.round((profile.stats.wins / profile.stats.gamesPlayed) * 100)
     : 0;
 
   const handleSaveName = () => {
-    updateName(playerSlot, nameInput);
+    const trimmed = nameInput.trim();
+    if (trimmed) updateName(playerSlot, trimmed);
     setEditingName(false);
   };
 
   const showNotice = (msg: string) => {
     setNotice(msg);
-    setTimeout(() => setNotice(null), 2000);
+    setTimeout(() => setNotice(null), 2500);
   };
 
   const handleSkinPress = (skin: Skin) => {
@@ -52,189 +187,186 @@ export default function ProfileScreen({ navigation, route }: Props) {
     }
     if (!skin.price) return;
     const success = buySkin(playerSlot, skin.id);
-    if (!success) showNotice(`Not enough coins — need 💰 ${skin.price}`);
+    if (!success) showNotice(`Not enough coins — need ${skin.price}`);
   };
 
   const renderSkinCard = ({ item: skin }: { item: Skin }) => {
+    const palette   = getSkinGemPalette(skin.id);
     const isEquipped = skin.id === profile.activeSkinId;
-    const isOwned = profile.unlockedSkinIds.includes(skin.id);
-    const canAfford = skin.price ? profile.coins >= skin.price : true;
-
+    const isOwned    = profile.unlockedSkinIds.includes(skin.id);
+    const canAfford  = skin.price ? profile.coins >= skin.price : true;
     return (
-      <TouchableOpacity
-        style={[styles.skinCard, isEquipped && styles.skinCardEquipped]}
+      <SkinCard
+        skin={skin}
+        palette={palette}
+        isEquipped={isEquipped}
+        isOwned={isOwned}
+        canAfford={canAfford}
         onPress={() => handleSkinPress(skin)}
-        activeOpacity={0.75}
-      >
-        <LinearGradient
-          colors={skin.colors}
-          style={styles.skinPreview}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-        <Text style={styles.skinName}>{skin.name}</Text>
-        <View style={[styles.rarityChip, { borderColor: RARITY_COLORS[skin.rarity] }]}>
-          <Text style={[styles.rarityText, { color: RARITY_COLORS[skin.rarity] }]}>
-            {skin.rarity.toUpperCase()}
-          </Text>
-        </View>
-        {isEquipped ? (
-          <View style={styles.equippedBadge}>
-            <Text style={styles.equippedText}>✓ ON</Text>
-          </View>
-        ) : isOwned ? (
-          <Text style={styles.ownedText}>OWNED</Text>
-        ) : (
-          <View style={[styles.priceChip, !canAfford && styles.priceChipLocked]}>
-            <Text style={[styles.priceText, !canAfford && styles.priceTextLocked]}>
-              💰 {skin.price}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+      />
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>PROFILE</Text>
-        <View style={styles.coinsChip}>
-          <Text style={styles.coinsText}>💰 {profile.coins}</Text>
-        </View>
+    <View style={styles.root}>
+      {/* Fixed sky background */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <SkyScene balloon={false} hillsHeight={130} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Avatar Hero */}
-        <View style={styles.hero}>
-          <AvatarBadge profile={profile} size={88} />
-          <View style={styles.nameRow}>
-            {editingName ? (
-              <TextInput
-                style={styles.nameInput}
-                value={nameInput}
-                onChangeText={setNameInput}
-                onBlur={handleSaveName}
-                onSubmitEditing={handleSaveName}
-                autoFocus
-                maxLength={16}
-                selectTextOnFocus
-              />
-            ) : (
-              <TouchableOpacity onPress={() => { setNameInput(profile.name); setEditingName(true); }} style={styles.nameTouch}>
-                <Text style={styles.nameText}>{profile.name}</Text>
-                <Text style={styles.editIcon}> ✏️</Text>
-              </TouchableOpacity>
-            )}
+      <SafeAreaView style={{ flex: 1 }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
+
+          <Ribbon variant="pink" fontSize={12} letterSpacing={3}>PROFILE</Ribbon>
+
+          <View style={styles.coinChip}>
+            <Coin size={18} />
+            <Text style={styles.coinValue}>{profile.coins}</Text>
           </View>
-          <Text style={styles.skinLabel}>{activeSkin.name} skin</Text>
         </View>
 
-        {notice && (
-          <View style={styles.notice}>
-            <Text style={styles.noticeText}>{notice}</Text>
-          </View>
-        )}
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero section */}
+          <View style={styles.hero}>
+            <Animated.View style={{ transform: [{ translateY: heroBobY }] }}>
+              <Gem palette={profilePalette} size={98} avatar={profile.avatar} />
+            </Animated.View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          {[
-            { label: 'GAMES', value: profile.stats.gamesPlayed },
-            { label: 'WINS',  value: profile.stats.wins },
-            { label: 'W/R',   value: `${winRate}%` },
-          ].map(({ label, value }) => (
-            <View key={label} style={styles.statCard}>
-              <Text style={styles.statValue}>{value}</Text>
-              <Text style={styles.statLabel}>{label}</Text>
+            {/* Editable name */}
+            <View style={styles.nameRow}>
+              {editingName ? (
+                <TextInput
+                  style={styles.nameInput}
+                  value={nameInput}
+                  onChangeText={setNameInput}
+                  onBlur={handleSaveName}
+                  onSubmitEditing={handleSaveName}
+                  autoFocus
+                  maxLength={16}
+                  selectTextOnFocus
+                />
+              ) : (
+                <TouchableOpacity
+                  style={styles.nameTouch}
+                  onPress={() => { setNameInput(profile.name); setEditingName(true); }}
+                >
+                  <Text style={styles.nameText}>{profile.name}</Text>
+                  <Text style={styles.editIcon}> ✎</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          ))}
-        </View>
 
-        {/* Face Editor */}
-        <Text style={styles.sectionTitle}>AVATAR</Text>
-
-        <View style={styles.faceEditorRow}>
-          {/* Live preview */}
-          <View style={styles.facePreviewWrap}>
-            <LinearGradient
-              colors={activeSkin.colors}
-              style={styles.facePreviewCircle}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-            <AvatarFace config={profile.avatar} size={72} />
+            <Text style={styles.skinLabel}>{activeSkin.name} gem</Text>
           </View>
 
-          {/* Pickers */}
-          <View style={styles.pickerCol}>
+          {/* Notice toast */}
+          {notice !== null && (
+            <View style={styles.notice}>
+              <Text style={styles.noticeText}>{notice}</Text>
+            </View>
+          )}
+
+          {/* Stats row */}
+          <View style={styles.statsRow}>
+            {([
+              { label: 'GAMES', value: profile.stats.gamesPlayed },
+              { label: 'WINS',  value: profile.stats.wins },
+              { label: 'W/R',   value: `${winRate}%` },
+            ] as const).map(stat => (
+              <Capsule key={stat.label} style={styles.statCapsule}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </Capsule>
+            ))}
+          </View>
+
+          {/* Avatar section */}
+          <SectionTag label="AVATAR" style={{ marginTop: 8 }} />
+
+          {/* Eyes */}
+          <View style={styles.pickerSection}>
             <Text style={styles.pickerLabel}>EYES</Text>
             <View style={styles.pickerRow}>
-              {EYE_LABELS.map((label, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.pickerBtn, profile.avatar.eyeStyle === i && styles.pickerBtnSelected]}
-                  onPress={() => updateAvatar(playerSlot, { eyeStyle: i })}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.pickerFaceWrap}>
-                    <LinearGradient
-                      colors={activeSkin.colors}
-                      style={styles.pickerFaceCircle}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+              {Array.from({ length: EYE_COUNT }, (_, i) => {
+                const selected = profile.avatar.eyeStyle === i;
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.pickerTile, selected && styles.tileSelected]}
+                    onPress={() => updateAvatar(playerSlot, { eyeStyle: i })}
+                    activeOpacity={0.75}
+                  >
+                    <Gem
+                      palette={profilePalette}
+                      size={46}
+                      avatar={{ eyeStyle: i, mouthStyle: profile.avatar.mouthStyle }}
                     />
-                    <AvatarFace config={{ eyeStyle: i, mouthStyle: profile.avatar.mouthStyle }} size={36} />
-                  </View>
-                  <Text style={styles.pickerBtnText}>{label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={[styles.pickerLabel, { marginTop: 12 }]}>MOUTH</Text>
-            <View style={styles.pickerRow}>
-              {MOUTH_LABELS.map((label, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.pickerBtn, profile.avatar.mouthStyle === i && styles.pickerBtnSelected]}
-                  onPress={() => updateAvatar(playerSlot, { mouthStyle: i })}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.pickerFaceWrap}>
-                    <LinearGradient
-                      colors={activeSkin.colors}
-                      style={styles.pickerFaceCircle}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    />
-                    <AvatarFace config={{ eyeStyle: profile.avatar.eyeStyle, mouthStyle: i }} size={36} />
-                  </View>
-                  <Text style={styles.pickerBtnText}>{label}</Text>
-                </TouchableOpacity>
-              ))}
+                    {selected && (
+                      <View style={styles.checkBadge}>
+                        <Text style={styles.checkText}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
-        </View>
 
-        {/* Skins */}
-        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>SKINS</Text>
-        <FlatList
-          data={SKINS_CATALOG}
-          renderItem={renderSkinCard}
-          keyExtractor={s => s.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.skinsList}
-        />
-      </ScrollView>
-    </SafeAreaView>
+          {/* Mouths */}
+          <View style={[styles.pickerSection, { marginTop: 12 }]}>
+            <Text style={styles.pickerLabel}>MOUTH</Text>
+            <View style={styles.pickerRow}>
+              {Array.from({ length: MOUTH_COUNT }, (_, i) => {
+                const selected = profile.avatar.mouthStyle === i;
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.pickerTile, selected && styles.tileSelected]}
+                    onPress={() => updateAvatar(playerSlot, { mouthStyle: i })}
+                    activeOpacity={0.75}
+                  >
+                    <Gem
+                      palette={profilePalette}
+                      size={46}
+                      avatar={{ eyeStyle: profile.avatar.eyeStyle, mouthStyle: i }}
+                    />
+                    {selected && (
+                      <View style={styles.checkBadge}>
+                        <Text style={styles.checkText}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Gem shop */}
+          <SectionTag label="GEM SHOP" style={{ marginTop: 28 }} />
+          <FlatList
+            data={SKINS_CATALOG}
+            renderItem={renderSkinCard}
+            keyExtractor={s => s.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.skinsList}
+            scrollEnabled
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F3EE' },
+  root: { flex: 1 },
 
   header: {
     flexDirection: 'row',
@@ -242,177 +374,109 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#3D1A6B',
+    paddingBottom: 10,
   },
-  backBtn: { padding: 4 },
-  backText: { color: '#C084FC', fontSize: 15 },
-  headerTitle: {
-    fontFamily: 'Orbitron_900Black',
-    fontSize: 14,
-    color: '#FFFFFF',
-    letterSpacing: 3,
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FFFDF6',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: 'rgba(58,28,99,0.2)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 3,
   },
-  coinsChip: {
-    backgroundColor: '#1A0040',
-    borderRadius: 12,
+  backText: { fontSize: 18, color: '#4A2C6E' },
+  coinChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.9)',
   },
-  coinsText: { color: '#FFD700', fontSize: 13, fontWeight: '700' },
+  coinValue: { fontFamily: Fonts.uiBold, fontSize: 14, color: '#4A2C6E' },
 
-  scroll: { paddingBottom: 40 },
+  scroll: { paddingBottom: 60 },
 
-  hero: { alignItems: 'center', paddingTop: 32, paddingBottom: 24 },
-  nameRow: { marginTop: 14, flexDirection: 'row', alignItems: 'center' },
+  hero: { alignItems: 'center', paddingTop: 28, paddingBottom: 22 },
+  nameRow: { marginTop: 14 },
   nameTouch: { flexDirection: 'row', alignItems: 'center' },
-  nameText: { fontSize: 22, fontWeight: '700', color: '#FFFFFF' },
-  editIcon: { fontSize: 16 },
+  nameText: { fontFamily: Fonts.display, fontSize: 28, color: '#4A2C6E' },
+  editIcon: { fontSize: 18, color: '#7647BE' },
   nameInput: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontFamily: Fonts.display,
+    fontSize: 28,
+    color: '#4A2C6E',
     borderBottomWidth: 2,
-    borderBottomColor: '#E879F9',
+    borderBottomColor: '#7647BE',
     paddingHorizontal: 4,
     paddingBottom: 2,
     minWidth: 120,
     textAlign: 'center',
   },
-  skinLabel: { marginTop: 6, color: '#7C3AED', fontSize: 12, letterSpacing: 1 },
+  skinLabel: { marginTop: 6, fontFamily: Fonts.ui, fontSize: 12, color: 'rgba(74,44,110,0.7)', letterSpacing: 1 },
 
   notice: {
-    marginHorizontal: 24,
-    marginBottom: 12,
-    backgroundColor: '#CC330033',
+    marginHorizontal: 22,
+    marginBottom: 10,
+    backgroundColor: 'rgba(204,51,0,0.12)',
     borderWidth: 1,
-    borderColor: '#CC3300',
-    borderRadius: 8,
+    borderColor: 'rgba(204,51,0,0.5)',
+    borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  noticeText: { color: '#FF8C8C', fontSize: 13, textAlign: 'center' },
+  noticeText: { fontFamily: Fonts.ui, color: '#CC3300', fontSize: 13, textAlign: 'center' },
 
   statsRow: {
     flexDirection: 'row',
-    marginHorizontal: 24,
-    marginBottom: 32,
+    marginHorizontal: 22,
     gap: 10,
+    marginBottom: 24,
   },
-  statCard: {
+  statCapsule: { flex: 1, alignItems: 'center', paddingVertical: 12, gap: 2 },
+  statValue: { fontFamily: Fonts.display, fontSize: 22, color: '#4A2C6E' },
+  statLabel: { fontFamily: Fonts.uiBold, fontSize: 9, letterSpacing: 1.5, color: '#8468AC' },
+
+  pickerSection: { marginHorizontal: 22 },
+  pickerLabel: { fontFamily: Fonts.uiBold, fontSize: 10, letterSpacing: 2, color: 'rgba(255,255,255,0.85)', marginBottom: 8 },
+  pickerRow: { flexDirection: 'row', gap: 8 },
+  pickerTile: {
     flex: 1,
-    backgroundColor: '#1A0040',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#3D1A6B',
-    paddingVertical: 14,
+    backgroundColor: 'rgba(255,255,255,0.70)',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+    padding: 6,
     alignItems: 'center',
+    aspectRatio: 1,
+    justifyContent: 'center',
   },
-  statValue: {
-    fontFamily: 'Orbitron_900Black',
-    fontSize: 22,
-    color: '#FFFFFF',
+  tileSelected: {
+    borderColor: '#FFC93C',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
-  statLabel: {
-    marginTop: 4,
-    fontSize: 10,
-    color: '#7C3AED',
-    letterSpacing: 1,
-  },
-
-  sectionTitle: {
-    fontFamily: 'Orbitron_900Black',
-    fontSize: 11,
-    color: '#7C3AED',
-    letterSpacing: 3,
-    marginHorizontal: 24,
-    marginBottom: 12,
-  },
-
-  // Face editor
-  faceEditorRow: {
-    flexDirection: 'row',
-    marginHorizontal: 24,
-    marginBottom: 8,
-    gap: 16,
-    alignItems: 'flex-start',
-  },
-  facePreviewWrap: {
-    width: 72,
-    height: 72,
-  },
-  facePreviewCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  checkBadge: {
     position: 'absolute',
-  },
-  pickerCol: { flex: 1 },
-  pickerLabel: {
-    fontFamily: 'Orbitron_900Black',
-    fontSize: 9,
-    color: '#7C3AED',
-    letterSpacing: 2,
-    marginBottom: 6,
-  },
-  pickerRow: { flexDirection: 'row', gap: 6 },
-  pickerBtn: {
-    flex: 1,
-    backgroundColor: '#1A0040',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#3D1A6B',
-    paddingVertical: 6,
+    bottom: 4,
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#3FA72A',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
   },
-  pickerBtnSelected: { borderColor: '#E879F9', borderWidth: 2, backgroundColor: '#2D0A6B' },
-  pickerFaceWrap: { width: 36, height: 36 },
-  pickerFaceCircle: { width: 36, height: 36, borderRadius: 18, position: 'absolute' },
-  pickerBtnText: { fontSize: 8, color: '#7C3AED', fontWeight: '600' },
+  checkText: { fontSize: 9, color: '#fff', fontFamily: Fonts.uiBold },
 
-  skinsList: { paddingHorizontal: 24, gap: 10, marginBottom: 8 },
-  skinCard: {
-    width: 90,
-    backgroundColor: '#1A0040',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#3D1A6B',
-    padding: 10,
-    alignItems: 'center',
-  },
-  skinCardEquipped: { borderColor: '#E879F9', borderWidth: 2 },
-  skinPreview: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginBottom: 8,
-  },
-  skinName: { fontSize: 11, color: '#FFFFFF', fontWeight: '600', textAlign: 'center', marginBottom: 4 },
-  rarityChip: {
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    marginBottom: 6,
-  },
-  rarityText: { fontSize: 8, fontWeight: '700', letterSpacing: 0.5 },
-  equippedBadge: {
-    backgroundColor: '#E879F922',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  equippedText: { fontSize: 9, color: '#E879F9', fontWeight: '700' },
-  ownedText: { fontSize: 9, color: '#7C3AED' },
-  priceChip: {
-    backgroundColor: '#FFD70022',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  priceChipLocked: { backgroundColor: '#33333333' },
-  priceText: { fontSize: 9, color: '#FFD700', fontWeight: '700' },
-  priceTextLocked: { color: '#556677' },
+  skinsList: { paddingHorizontal: 22, gap: 10, paddingBottom: 8 },
 });
